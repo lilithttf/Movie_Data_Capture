@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# 解析番号的基类
 
 import json
 import re

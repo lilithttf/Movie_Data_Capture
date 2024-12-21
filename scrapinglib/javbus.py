@@ -138,3 +138,9 @@ class Javbus(Parser):
             return getStoryline(self.number , uncensored = self.uncensored,
                                 proxies=self.proxies, verify=self.verify)
         return ''
+    
+    def extradict(self, dic):
+        """ 额外新增的  headers
+        """
+        dic['headers'] = {"referer": self.detailurl}
+        return dic
