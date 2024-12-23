@@ -155,6 +155,7 @@ class Scraping:
                 other_json_data = self.searchAdult(number, other_sources)
                 if other_json_data is not None and 'cover' in other_json_data and other_json_data['cover'] != '':
                     json_data['cover'] = other_json_data['cover']
+                    json_data['headers'] = other_json_data['headers']
                     if self.debug:
                         print(f"[+]Find movie [{number}] cover on website '{other_json_data['cover']}'")
             except:

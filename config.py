@@ -415,9 +415,6 @@ class Config:
         return self.conf.get("cc_convert", "vars",
             fallback="actor,director,label,outline,series,studio,tag,title")
 
-    def javdb_sites(self) -> str:
-        return self.conf.get("javdb", "sites", fallback="38,39")
-
     def face_locations_model(self) -> str:
         return self.conf.get("face", "locations_model", fallback="hog")
 
