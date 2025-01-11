@@ -58,14 +58,14 @@ def get_data_from_json(
         cookie_json = javdb_site + '.json'
         cookies_dict, cookies_filepath = load_cookies(cookie_json)
         if isinstance(cookies_dict, dict) and isinstance(cookies_filepath, str):
-            cdays = file_modification_days(cookies_filepath)
-            if cdays < 7:
-                javdb_cookies = cookies_dict
-                has_valid_cookie = True
-                break
-            elif cdays != 9999:
-                print(
-                    f'[!]Cookies file {cookies_filepath} was updated {cdays} days ago, it will not be used for HTTP requests.')
+            # cdays = file_modification_days(cookies_filepath)
+            # if cdays < 7:
+            javdb_cookies = cookies_dict
+            has_valid_cookie = True
+            break
+            # elif cdays != 9999:
+            #     print(
+            #         f'[!]Cookies file {cookies_filepath} was updated {cdays} days ago, it will not be used for HTTP requests.')
     if not has_valid_cookie:
         # get real random site from javdb_sites, because random is not really random when the seed value is known
         javdb_site = secrets.choice(javdb_sites)
