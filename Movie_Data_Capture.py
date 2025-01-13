@@ -311,6 +311,15 @@ def sigdebug_handler(*args):
     conf.set_override(f"debug_mode:switch={int(not conf.debug())}")
     print(f"[!]Debug {('oFF', 'On')[int(conf.debug())]}")
 
+def walk(top, maxdepth):
+    dirs, nondirs = [], []
+    for entry in os.scandir(top):
+        (dirs if entry.is_dir() else nondirs).append(entry.path)
+    yield top, dirs, nondirs
+    if maxdepth > 1:
+        for dir in dirs:
+            for x in walk(dir, maxdepth-1):
+                yield x
 
 # 新增失败文件列表跳过处理，及.nfo修改天数跳过处理，提示跳过视频总数，调试模式(-g)下详细被跳过文件，跳过小广告
 def movie_lists(source_folder, regexstr: str) -> typing.List[str]:
@@ -348,40 +357,42 @@ def movie_lists(source_folder, regexstr: str) -> typing.List[str]:
     source = Path(source_folder).resolve()
     skip_failed_cnt, skip_nfo_days_cnt = 0, 0
     escape_folder_set = set(re.split("[,，]", conf.escape_folder()))
-    pattern = ''.join(['*/' for _ in range(conf.source_folder_deep() - 1)]) + '*' if conf.source_folder_deep() else '**/*'
-    for full_name in source.glob(pattern):
-        if main_mode != 3 and set(full_name.parent.parts) & escape_folder_set:
-            continue
-        if not full_name.is_file():
-            continue
-        if not full_name.suffix.lower() in file_type:
-            continue
-        absf = str(full_name)
-        if absf in failed_set:
-            skip_failed_cnt += 1
-            if debug:
-                print('[!]Skip failed movie:', absf)
-            continue
-        is_sym = full_name.is_symlink()
-        if main_mode != 3 and (is_sym or (full_name.stat().st_nlink > 1 and not conf.scan_hardlink())):  # 短路布尔 符号链接不取stat()，因为符号链接可能指向不存在目标
-            continue  # 模式不等于3下跳过软连接和未配置硬链接刮削
-        # 调试用0字节样本允许通过，去除小于120MB的广告'苍老师强力推荐.mp4'(102.2MB)'黑道总裁.mp4'(98.4MB)'有趣的妹子激情表演.MP4'(95MB)'有趣的臺灣妹妹直播.mp4'(15.1MB)
-        movie_size = 0 if is_sym else full_name.stat().st_size  # 同上 符号链接不取stat()及st_size，直接赋0跳过小视频检测
-        # if 0 < movie_size < 125829120:  # 1024*1024*120=125829120
-        #     continue
-        if cliRE and not cliRE.search(absf) or trailerRE.search(full_name.name):
-            continue
-        if main_mode == 3:
-            nfo = full_name.with_suffix('.nfo')
-            if not nfo.is_file():
-                if debug:
-                    print(f"[!]Metadata {nfo.name} not found for '{absf}'")
-            elif nfo_skip_days > 0 and file_modification_days(nfo) <= nfo_skip_days:
-                skip_nfo_days_cnt += 1
-                if debug:
-                    print(f"[!]Skip movie by it's .nfo which modified within {nfo_skip_days} days: '{absf}'")
+    # for full_name in source.glob(r'**/*'):
+    for _, _, files in walk(source, conf.source_folder_deep()):
+        for file in files:
+            full_name = Path(file)
+            if main_mode != 3 and set(full_name.parent.parts) & escape_folder_set:
                 continue
-        total.append(absf)
+            if not full_name.is_file():
+                continue
+            if not full_name.suffix.lower() in file_type:
+                continue
+            absf = str(full_name)
+            if absf in failed_set:
+                skip_failed_cnt += 1
+                if debug:
+                    print('[!]Skip failed movie:', absf)
+                continue
+            is_sym = full_name.is_symlink()
+            if main_mode != 3 and (is_sym or (full_name.stat().st_nlink > 1 and not conf.scan_hardlink())):  # 短路布尔 符号链接不取stat()，因为符号链接可能指向不存在目标
+                continue  # 模式不等于3下跳过软连接和未配置硬链接刮削
+            # 调试用0字节样本允许通过，去除小于120MB的广告'苍老师强力推荐.mp4'(102.2MB)'黑道总裁.mp4'(98.4MB)'有趣的妹子激情表演.MP4'(95MB)'有趣的臺灣妹妹直播.mp4'(15.1MB)
+            movie_size = 0 if is_sym else full_name.stat().st_size  # 同上 符号链接不取stat()及st_size，直接赋0跳过小视频检测
+            # if 0 < movie_size < 125829120:  # 1024*1024*120=125829120
+            #     continue
+            if cliRE and not cliRE.search(absf) or trailerRE.search(full_name.name):
+                continue
+            if main_mode == 3:
+                nfo = full_name.with_suffix('.nfo')
+                if not nfo.is_file():
+                    if debug:
+                        print(f"[!]Metadata {nfo.name} not found for '{absf}'")
+                elif nfo_skip_days > 0 and file_modification_days(nfo) <= nfo_skip_days:
+                    skip_nfo_days_cnt += 1
+                    if debug:
+                        print(f"[!]Skip movie by it's .nfo which modified within {nfo_skip_days} days: '{absf}'")
+                    continue
+            total.append(absf)
 
     if skip_failed_cnt:
         print(f"[!]Skip {skip_failed_cnt} movies in failed list '{failed_list_txt_path}'.")

@@ -172,7 +172,7 @@ class Config:
         return self.conf.get("common", "source_folder").replace("\\\\", "/").replace("\\", "/")
     
     def source_folder_deep(self) -> int:
-        return int(self.conf._unify_values('common', None).get('source_folder_deep', 0))
+        return int(self.conf._unify_values('common', None).get('source_folder_deep', 10))
 
     def failed_folder(self) -> str:
         return self.conf.get("common", "failed_output_folder").replace("\\\\", "/").replace("\\", "/")
