@@ -348,7 +348,8 @@ def movie_lists(source_folder, regexstr: str) -> typing.List[str]:
     source = Path(source_folder).resolve()
     skip_failed_cnt, skip_nfo_days_cnt = 0, 0
     escape_folder_set = set(re.split("[,，]", conf.escape_folder()))
-    for full_name in source.glob(r'**/*'):
+    pattern = ''.join(['*/' for _ in range(int(conf.source_folder_deep()) - 1)]) + '*' if conf.source_folder_deep() else '**/*'
+    for full_name in source.glob(pattern):
         if main_mode != 3 and set(full_name.parent.parts) & escape_folder_set:
             continue
         if not full_name.is_file():
